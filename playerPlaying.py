@@ -1,17 +1,96 @@
 from PySide import QtGui, QtCore
 from PySide.phonon import Phonon
 import sys, os
+import time
+import colorschemes2
+import threading
+
 import RPi.GPIO as GPIO
+
 from random import randint
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+NUM_LED=8##
+class MyThread(threading.Thread):
+        
+        def __init__(self):
+            threading.Thread.__init__(self)
+            self.__suspend = False
+            self.__exit = False
+ 
+        def run(self):
+#                j=0
+                while True:
+                    ### Suspend ###
+                        while self.__suspend:
+                                time.sleep(0.5)
+                         
+                    ### Process ###
+                        #print ('Thread process !!!')
+                        
+                        for j in range(1000):
+                                if(self.__suspend==False):
+                                        pass
+                                else:
+                                        break
+                                print("Thread running :%d" %j)
+                                j=j+1
+                            #time.sleep(1)
+         
+                    ### Exit ###
+                        if self.__exit:
+                                break
 
+        def mySuspend(self):
+                self.__suspend = True
+
+        def myResume(self): 
+                self.__suspend = False
+
+        def myExit(self):
+                self.__exit = True
+ 
+ 
+lock = threading.Lock()
+
+
+"""
+class StoppableThread(threading.Thread):
+    def __init__(self):
+        super(StoppableThread,self).__init__()
+        self._stop_event = threading.Event()
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()
     
+"""
 
+def countup():
+        i=0
+        #while i<10:
+        while getattr(my_thread,"do_run",True):
+            print("Thread running :%d" %i)
+            i=i+1
+            #time.sleep(1)
+#            
+##my_thread=threading.Thread(target=countup,args=())
+#my_thread.do_run=False
+#my_thread.start()
+#
 
+th=MyThread()
+th.start()
+th.mySuspend()
+
+#### apa object
+MY_CYCLE=colorschemes2.StrandTest(num_led=NUM_LED,pause_value=0.1,num_steps_per_cycle=NUM_LED,num_cycles=5)
+####
 class PemutarMusik(QtGui.QMainWindow) :
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
@@ -40,11 +119,20 @@ class PemutarMusik(QtGui.QMainWindow) :
 
         self.pemutar.setTickInterval(1000)
         self.connect(self.pemutar, QtCore.SIGNAL('tick(qint64)'), self.perbaruiWaktu)
-        GPIO.add_event_detect(20, GPIO.FALLING, callback=self.my_callback, bouncetime=300)        
+        GPIO.add_event_detect(20, GPIO.FALLING, callback=self.my_callback, bouncetime=300)
+        #my_thread=threading.Thread(target=self.countup,args=())
+
         # self.connect(self.pemutar, QtCore.SIGNAL('aboutToFinished()'), print('a'))
 
     def my_callback(self,channel):
         self.putarAtauPause()
+
+    def countup(self):
+        
+        i=0
+        while i<1000:
+            print("Thread running :%d" %i)
+            i=i+1;
         
     def inisialisasiMedia(self):
         self.suara = Phonon.AudioOutput(Phonon.MusicCategory, self)
@@ -280,14 +368,42 @@ class PemutarMusik(QtGui.QMainWindow) :
 
 
     def putarAtauPause(self):
+        
         if self.penampungFile :
             if self.sedangDiputar :
                 self.pemutar.pause()
                 self.tombolStopPlay.setIcon(self.style().standardIcon(QtGui.QStyle.SP_MediaPlay))
+                th.mySuspend()
+                #my_thread._stop()
+                #my_thread.do_run=False
+                #my_thread.join()
+                
+                #thread_count.stop()
+                #thread_count.join()
+                
+                
             else :
                 self.tombolStopPlay.setIcon(self.style().standardIcon(QtGui.QStyle.SP_MediaPause))
-                self.pemutar.play()
+                ################ apa thread start
+                #my_thread=threading.Thread(target=self.countup,args=())
+                #my_thread.start()
+                #if(th.isAlive()=='False'):
+                
+                th.myResume()
+                
+                #if(my_thread.isAlive()==False):
+                #    my_thread.start()
+                #my_thread.do_run=True
+                #my_thread.join()
 
+                
+                #thread_count=StoppableThread(target=self.countup)
+                #thread_count.start()
+                #################
+                self.pemutar.play()
+                
+                #self.countup()
+                
         else:
             self.dataDariFile()
 
@@ -454,6 +570,8 @@ class PemutarMusik(QtGui.QMainWindow) :
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     window = PemutarMusik()
+    
+    #my_thread.start()
     window.setWindowTitle("Music Player")
     window.show()
     
